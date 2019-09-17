@@ -1,0 +1,152 @@
+{
+    "$connections": {
+        "value": {
+            "cognitiveservicescomputervision": {
+                "connectionId": "/subscriptions/050cfcdb-2f41-45f0-bfd9-2b678aa165e4/resourceGroups/EC601/providers/Microsoft.Web/connections/cognitiveservicescomputervision",
+                "connectionName": "cognitiveservicescomputervision",
+                "id": "/subscriptions/050cfcdb-2f41-45f0-bfd9-2b678aa165e4/providers/Microsoft.Web/locations/eastus2/managedApis/cognitiveservicescomputervision"
+            },
+            "twitter": {
+                "connectionId": "/subscriptions/050cfcdb-2f41-45f0-bfd9-2b678aa165e4/resourceGroups/EC601/providers/Microsoft.Web/connections/twitter",
+                "connectionName": "twitter",
+                "id": "/subscriptions/050cfcdb-2f41-45f0-bfd9-2b678aa165e4/providers/Microsoft.Web/locations/eastus2/managedApis/twitter"
+            }
+        }
+    },
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "For_each": {
+                "actions": {
+                    "For_each_2": {
+                        "actions": {
+                            "Analyze_Image": {
+                                "inputs": {
+                                    "body": {
+                                        "url": "@items('For_each_2')"
+                                    },
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['cognitiveservicescomputervision']['connectionId']"
+                                        }
+                                    },
+                                    "method": "post",
+                                    "path": "/vision/v2.0/analyze",
+                                    "queries": {
+                                        "format": "Image URL",
+                                        "visualFeatures": "Tags,Description,Categories"
+                                    }
+                                },
+                                "runAfter": {},
+                                "type": "ApiConnection"
+                            },
+                            "Append_to_string_variable": {
+                                "inputs": {
+                                    "name": "Result",
+                                    "value": "@body('Analyze_Image')?['tags']"
+                                },
+                                "runAfter": {
+                                    "Analyze_Image": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "AppendToStringVariable"
+                            }
+                        },
+                        "foreach": "@items('For_each')['MediaUrls']",
+                        "runAfter": {
+                            "Parse_JSON": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Foreach"
+                    },
+                    "Parse_JSON": {
+                        "inputs": {
+                            "content": "@items('For_each')?['MediaUrls']",
+                            "schema": {
+                                "media_urls": "a"
+                            }
+                        },
+                        "runAfter": {},
+                        "type": "ParseJson"
+                    }
+                },
+                "foreach": "@body('Search_tweets')",
+                "runAfter": {
+                    "Search_tweets": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Foreach"
+            },
+            "Initialize_variable": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "Result",
+                            "type": "String"
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            },
+            "Response": {
+                "inputs": {
+                    "body": "@variables('Result')",
+                    "headers": {
+                        "head": "result"
+                    },
+                    "statusCode": 200
+                },
+                "kind": "Http",
+                "runAfter": {
+                    "For_each": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            },
+            "Search_tweets": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['twitter']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/searchtweets",
+                    "queries": {
+                        "maxResults": 5,
+                        "searchQuery": "#朴素一餐"
+                    }
+                },
+                "runAfter": {
+                    "Initialize_variable": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "method": "GET",
+                    "schema": {}
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    }
+}
