@@ -6,6 +6,11 @@
                 "connectionName": "cognitiveservicescomputervision",
                 "id": "/subscriptions/050cfcdb-2f41-45f0-bfd9-2b678aa165e4/providers/Microsoft.Web/locations/eastus2/managedApis/cognitiveservicescomputervision"
             },
+            "sql": {
+                "connectionId": "/subscriptions/050cfcdb-2f41-45f0-bfd9-2b678aa165e4/resourceGroups/EC601/providers/Microsoft.Web/connections/sql",
+                "connectionName": "sql",
+                "id": "/subscriptions/050cfcdb-2f41-45f0-bfd9-2b678aa165e4/providers/Microsoft.Web/locations/eastus2/managedApis/sql"
+            },
             "twitter": {
                 "connectionId": "/subscriptions/050cfcdb-2f41-45f0-bfd9-2b678aa165e4/resourceGroups/EC601/providers/Microsoft.Web/connections/twitter",
                 "connectionName": "twitter",
@@ -16,14 +21,78 @@
     "definition": {
         "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
         "actions": {
-            "For_each": {
+            "Check_if_var_Hashtag_is_null": {
                 "actions": {
-                    "For_each_2": {
+                    "Hashtag=hashtag#get_from_http_request)": {
+                        "inputs": {
+                            "name": "Hashtag",
+                            "value": "@triggerBody()?['hashtag']"
+                        },
+                        "runAfter": {},
+                        "type": "SetVariable"
+                    }
+                },
+                "else": {
+                    "actions": {
+                        "Hashtag=\"#朴素一餐\"#default_hashtag": {
+                            "inputs": {
+                                "name": "Hashtag",
+                                "value": "#朴素一餐"
+                            },
+                            "runAfter": {},
+                            "type": "SetVariable"
+                        }
+                    }
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "not": {
+                                "equals": [
+                                    "@variables('Hashtag')",
+                                    ""
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_variable_Hashtag": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "If"
+            },
+            "For_each_3": {
+                "actions": {
+                    "Clear_TweetsImageCVInfo": {
+                        "inputs": {
+                            "name": "TweetsImageCVInfo",
+                            "value": "@null"
+                        },
+                        "runAfter": {},
+                        "type": "SetVariable"
+                    },
+                    "Delay": {
+                        "inputs": {
+                            "interval": {
+                                "count": 5,
+                                "unit": "Second"
+                            }
+                        },
+                        "runAfter": {
+                            "Clear_TweetsImageCVInfo": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Wait"
+                    },
+                    "For_each_4": {
                         "actions": {
                             "Analyze_Image": {
                                 "inputs": {
                                     "body": {
-                                        "url": "@items('For_each_2')"
+                                        "url": "@items('For_each_4')"
                                     },
                                     "host": {
                                         "connection": {
@@ -37,13 +106,41 @@
                                         "visualFeatures": "Tags,Description,Categories"
                                     }
                                 },
-                                "runAfter": {},
+                                "runAfter": {
+                                    "Clear_OneImageCVInfo": [
+                                        "Succeeded"
+                                    ]
+                                },
                                 "type": "ApiConnection"
                             },
-                            "Append_to_string_variable": {
+                            "AppendCategories": {
                                 "inputs": {
-                                    "name": "Result",
-                                    "value": "@body('Analyze_Image')?['tags']"
+                                    "name": "OneImageCVInfo",
+                                    "value": "\"Categories\":@{body('Analyze_Image')?['categories']}"
+                                },
+                                "runAfter": {
+                                    "AppendDescription": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "AppendToStringVariable"
+                            },
+                            "AppendDescription": {
+                                "inputs": {
+                                    "name": "OneImageCVInfo",
+                                    "value": "\"Description\":@{body('Analyze_Image')?['description']},"
+                                },
+                                "runAfter": {
+                                    "AppendTags": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "AppendToStringVariable"
+                            },
+                            "AppendTags": {
+                                "inputs": {
+                                    "name": "OneImageCVInfo",
+                                    "value": "\"Tags\": @{body('Analyze_Image')?['tags']},"
                                 },
                                 "runAfter": {
                                     "Analyze_Image": [
@@ -51,40 +148,108 @@
                                     ]
                                 },
                                 "type": "AppendToStringVariable"
+                            },
+                            "AppendToTweetsImageCVInfo": {
+                                "inputs": {
+                                    "name": "TweetsImageCVInfo",
+                                    "value": "@concat('{',string(variables('OneImageCVInfo')),'}')"
+                                },
+                                "runAfter": {
+                                    "AppendCategories": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "AppendToArrayVariable"
+                            },
+                            "Clear_OneImageCVInfo": {
+                                "inputs": {
+                                    "name": "OneImageCVInfo",
+                                    "value": "@null"
+                                },
+                                "runAfter": {},
+                                "type": "SetVariable"
                             }
                         },
-                        "foreach": "@items('For_each')['MediaUrls']",
+                        "foreach": "@items('For_each_3')['MediaUrls']",
                         "runAfter": {
-                            "Parse_JSON": [
+                            "Delay": [
                                 "Succeeded"
                             ]
                         },
                         "type": "Foreach"
                     },
-                    "Parse_JSON": {
+                    "Insert_row_(V2)": {
                         "inputs": {
-                            "content": "@items('For_each')?['MediaUrls']",
-                            "schema": {
-                                "media_urls": "a"
-                            }
+                            "body": {
+                                "TweetsCreatedTime": "@items('For_each_3')?['CreatedAtIso']",
+                                "TweetsCreater": "@items('For_each_3')?['UserDetails']?['FullName']",
+                                "TweetsCreaterUserId": "@items('For_each_3')?['UserDetails']?['Id']",
+                                "TweetsId": "@{items('For_each_3')?['TweetId']}",
+                                "TweetsImgInfo": "@{string(variables('TweetsImageCVInfo'))}",
+                                "TweetsMediaJson": "@{string(items('for_each_3')?['MediaUrls'])}",
+                                "TweetsText": "@{items('For_each_3')['TweetText']}"
+                            },
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['sql']['connectionId']"
+                                }
+                            },
+                            "method": "post",
+                            "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('ec601database-server.database.windows.net'))},@{encodeURIComponent(encodeURIComponent('ec601database'))}/tables/@{encodeURIComponent(encodeURIComponent('[dbo].[defaultKeywordsSearchStorage]'))}/items"
                         },
-                        "runAfter": {},
-                        "type": "ParseJson"
+                        "runAfter": {
+                            "For_each_4": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ApiConnection"
                     }
                 },
                 "foreach": "@body('Search_tweets')",
                 "runAfter": {
-                    "Search_tweets": [
+                    "Initialize_OneImageCVInfo": [
                         "Succeeded"
                     ]
                 },
                 "type": "Foreach"
             },
-            "Initialize_variable": {
+            "Initialize_OneImageCVInfo": {
                 "inputs": {
                     "variables": [
                         {
-                            "name": "Result",
+                            "name": "OneImageCVInfo",
+                            "type": "String"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_TweetsImageCVInfo": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize_TweetsImageCVInfo": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "TweetsImageCVInfo",
+                            "type": "Array"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Search_tweets": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize_variable_Hashtag": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "Hashtag",
                             "type": "String"
                         }
                     ]
@@ -94,7 +259,6 @@
             },
             "Response": {
                 "inputs": {
-                    "body": "@variables('Result')",
                     "headers": {
                         "head": "result"
                     },
@@ -102,11 +266,31 @@
                 },
                 "kind": "Http",
                 "runAfter": {
-                    "For_each": [
+                    "For_each_3": [
                         "Succeeded"
                     ]
                 },
                 "type": "Response"
+            },
+            "SQLqueryNewestTweetsId": {
+                "inputs": {
+                    "body": {
+                        "query": "SELECT TOP 1 TweetsId FROM defaultKeywordsSearchStorage ORDER BY TweetsId DESC "
+                    },
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['sql']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('ec601database-server.database.windows.net'))},@{encodeURIComponent(encodeURIComponent('ec601database'))}/query/sql"
+                },
+                "runAfter": {
+                    "Check_if_var_Hashtag_is_null": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
             },
             "Search_tweets": {
                 "inputs": {
@@ -118,12 +302,14 @@
                     "method": "get",
                     "path": "/searchtweets",
                     "queries": {
-                        "maxResults": 5,
-                        "searchQuery": "#朴素一餐"
+                        "maxId": 1174113789895159800,
+                        "maxResults": 99,
+                        "searchQuery": "@variables('Hashtag')",
+                        "sinceId": "@{body('SQLqueryNewestTweetsId')?['resultsets']?['table1']?[0]?['TweetsId']}"
                     }
                 },
                 "runAfter": {
-                    "Initialize_variable": [
+                    "SQLqueryNewestTweetsId": [
                         "Succeeded"
                     ]
                 },
@@ -142,7 +328,11 @@
             "manual": {
                 "inputs": {
                     "method": "GET",
-                    "schema": {}
+                    "schema": {
+                        "hashtag": {
+                            "type": "string"
+                        }
+                    }
                 },
                 "kind": "Http",
                 "type": "Request"
