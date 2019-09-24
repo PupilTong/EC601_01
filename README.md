@@ -21,4 +21,4 @@ Our application can provide a prediction of the food/materials they should buy o
 * As a food blogger I would like to know the sentiment of specific dishes, in order to write positive or negative reviews on those dishes.
 
 ## Architecture
-TODO: paste image
+![Architecture](EC601_miniproj_1_arch.png)
