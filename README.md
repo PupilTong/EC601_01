@@ -23,5 +23,5 @@ Our application can provide a prediction of the food/materials they should buy o
 ## Architecture
 ![Architecture](EC601_miniproj_1_arch.png)
 
-##demo
+## demo
 https://ec601.azurewebsites.net
