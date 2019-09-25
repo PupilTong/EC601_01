@@ -1,9 +1,5 @@
-using System;
-
-namespace WebApplication.Models
-{
-    public class ErrorViewModel
-    {
+namespace WebApplication.Models {
+    public class ErrorViewModel {
         public string RequestId { get; set; }
 
         public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
