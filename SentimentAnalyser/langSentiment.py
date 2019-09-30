@@ -61,10 +61,10 @@ def main():
     cursor = cnxn.cursor()
 
     # Get the table data
-    cursor.execute('select * from test_defaultKeywordsSearchStorage')
+    cursor.execute('select * from defaultKeywordsSearchStorage')
 
     # Update query
-    update_q = "UPDATE test_defaultKeywordsSearchStorage SET TweetsNLPScore = ? WHERE TweetsId = ?;"
+    update_q = "UPDATE defaultKeywordsSearchStorage SET TweetsNLPScore = ? WHERE TweetsId = ?;"
 
     # Iterate through rows
     for row in cursor.fetchall():
