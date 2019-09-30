@@ -30,7 +30,6 @@ Our application can provide a prediction of the food/materials they should buy o
 ## demo
 https://ec601.azurewebsites.net
 
-# Product Mission
 ## User Interface Design for main user story if required
 https://ec601.azurewebsites.net
 ## System Design and how your design addresses your user stories.
