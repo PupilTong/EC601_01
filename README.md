@@ -1,5 +1,8 @@
 # EC601_01
 
+## Mission
+Our mission is to provide our users better insight into their customers and consumers so they can better serve them.
+
 ## Product Description
 Our application will supply a user with a summary of content specified by a twitter handle or twitter hastag. The application also porvides the user with a sentiment(positive or negative) of the content recolected.
 
@@ -47,8 +50,10 @@ https://ec601.azurewebsites.net
 ![TestResult1](seafood.png)
 # Lessons learned
 ## What you liked doing?
- coding & learning new things.
+ Both: Coding & learning new things.
 ## What you could have done better?
- Website structure and coutent. More efficent tweet processing programs.
+ Haoyang: Website structure and content. More efficent tweet processing programs.
+ Amanda: Time management
+
 ## What you will avoid in the future?
  Overestimate my ability.
